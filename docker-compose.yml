@@ -1,0 +1,148 @@
+services:
+  downloader:
+    image: python:3.11-slim
+    container_name: oren-downloader
+
+    working_dir: /workspace
+
+    env_file:
+      - .env
+
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+
+    volumes:
+      - ./models:/models
+
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+
+        echo "========================================"
+        echo " OREN - Qwen3.8-27B Downloader"
+        echo "========================================"
+
+        pip install --no-cache-dir huggingface_hub
+
+        python3 - <<'PY'
+        import os
+        from huggingface_hub import snapshot_download
+
+        repo = "Qwen/Qwen3.8-27B"
+        target = "/models/Qwen3.8-27B"
+
+        token = os.getenv("HF_TOKEN") or None
+
+        print(f"Model      : {repo}")
+        print(f"Destination: {target}")
+
+        snapshot_download(
+            repo_id=repo,
+            local_dir=target,
+            token=token
+        )
+
+        print("Model download completed.")
+        PY
+
+    restart: "no"
+
+  oren:
+    image: vllm/vllm-openai:latest
+
+    container_name: oren
+
+    runtime: nvidia
+
+    ipc: host
+
+    env_file:
+      - .env
+
+    environment:
+      HF_HOME: /root/.cache/huggingface
+      VLLM_API_KEY: ${VLLM_API_KEY}
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+
+    volumes:
+      - ./models:/models
+      - hf-cache:/root/.cache/huggingface
+
+    ports:
+      - "8003:8003"
+
+    command:
+      - serve
+      - /models/Qwen3.8-27B
+
+      # Network
+      - --host
+      - 0.0.0.0
+
+      - --port
+      - "8003"
+
+      # Tensor Parallel
+      - --tensor-parallel-size
+      - "2"
+
+      # GPU memory
+      - --gpu-memory-utilization
+      - "0.90"
+
+      # Context
+      - --max-model-len
+      - "1000000"
+
+      # Scheduler
+      - --max-num-batched-tokens
+      - "10000"
+
+      - --max-num-seqs
+      - "8"
+
+      # Execution
+      - --enforce-eager
+
+      # Tool Calling
+      - --enable-auto-tool-choice
+
+      - --tool-call-parser
+      - hermes
+
+      # Model compatibility
+      - --trust-remote-code
+
+      # Authentication
+      - --api-key
+      - ${VLLM_API_KEY}
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids:
+                - "2"
+                - "3"
+              capabilities:
+                - gpu
+
+    depends_on:
+      downloader:
+        condition: service_completed_successfully
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8003/health || exit 1"]
+
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 120s
+
+    restart: unless-stopped
+
+volumes:
+  hf-cache:
