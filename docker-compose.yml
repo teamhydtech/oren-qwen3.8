@@ -97,10 +97,7 @@ services:
       - "8003:8003"
 
     command:
-      - serve
-
       # Model
-      - --model
       - /models/Qwen3.8-27B
 
       # Network
