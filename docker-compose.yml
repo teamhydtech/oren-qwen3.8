@@ -86,6 +86,8 @@ services:
     command:
       # Model
       - /models/Qwen3.8-27B
+      - --served-model-name
+      - Qwen/Qwen3.8-27B
 
       # Network
       - --host
