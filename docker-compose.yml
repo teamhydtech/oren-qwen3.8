@@ -10,11 +10,7 @@ services:
 
     environment:
       HF_TOKEN: ${HF_TOKEN:-}
-
-      # Disable Hugging Face Xet/CAS
       HF_HUB_DISABLE_XET: "1"
-
-      # Enable accelerated HTTP transfer
       HF_HUB_ENABLE_HF_TRANSFER: "1"
 
     volumes:
@@ -30,14 +26,9 @@ services:
         echo " OREN - Qwen3.8-27B Downloader"
         echo "========================================"
 
-        echo "[1/2] Installing Hugging Face tools..."
-
         pip install --no-cache-dir \
           huggingface_hub \
           hf_transfer
-
-        echo "[2/2] Starting model download..."
-        echo ""
 
         python3 - <<'PY'
         import os
@@ -45,11 +36,10 @@ services:
 
         repo = "Qwen/Qwen3.8-27B"
         target = "/models/Qwen3.8-27B"
-
         token = os.getenv("HF_TOKEN") or None
 
         print("========================================")
-        print(" Model Download")
+        print("Model Download")
         print("========================================")
         print(f"Model      : {repo}")
         print(f"Destination: {target}")
@@ -65,9 +55,7 @@ services:
         )
 
         print("")
-        print("========================================")
-        print(" Model download completed.")
-        print("========================================")
+        print("Model download completed.")
         PY
 
     restart: "no"
@@ -78,7 +66,6 @@ services:
     container_name: oren-qwen3.8-27b
 
     runtime: nvidia
-
     ipc: host
 
     env_file:
@@ -103,7 +90,6 @@ services:
       # Network
       - --host
       - 0.0.0.0
-
       - --port
       - "8003"
 
@@ -117,12 +103,11 @@ services:
 
       # Context
       - --max-model-len
-      - "1000000"
+      - "262144"
 
       # Scheduler
       - --max-num-batched-tokens
       - "10000"
-
       - --max-num-seqs
       - "8"
 
@@ -131,7 +116,6 @@ services:
 
       # Tool Calling
       - --enable-auto-tool-choice
-
       - --tool-call-parser
       - hermes
 
@@ -159,7 +143,6 @@ services:
 
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8003/health || exit 1"]
-
       interval: 30s
       timeout: 10s
       retries: 60
