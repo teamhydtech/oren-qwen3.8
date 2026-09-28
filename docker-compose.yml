@@ -11,6 +11,12 @@ services:
     environment:
       HF_TOKEN: ${HF_TOKEN:-}
 
+      # Disable Hugging Face Xet/CAS
+      HF_HUB_DISABLE_XET: "1"
+
+      # Enable accelerated HTTP transfer
+      HF_HUB_ENABLE_HF_TRANSFER: "1"
+
     volumes:
       - ./models:/models
 
@@ -24,7 +30,14 @@ services:
         echo " OREN - Qwen3.8-27B Downloader"
         echo "========================================"
 
-        pip install --no-cache-dir huggingface_hub
+        echo "[1/2] Installing Hugging Face tools..."
+
+        pip install --no-cache-dir \
+          huggingface_hub \
+          hf_transfer
+
+        echo "[2/2] Starting model download..."
+        echo ""
 
         python3 - <<'PY'
         import os
@@ -35,16 +48,26 @@ services:
 
         token = os.getenv("HF_TOKEN") or None
 
+        print("========================================")
+        print(" Model Download")
+        print("========================================")
         print(f"Model      : {repo}")
         print(f"Destination: {target}")
+        print("Xet        : disabled")
+        print("Transfer   : hf_transfer")
+        print("Mode       : resume")
+        print("========================================")
 
         snapshot_download(
             repo_id=repo,
             local_dir=target,
-            token=token
+            token=token,
         )
 
-        print("Model download completed.")
+        print("")
+        print("========================================")
+        print(" Model download completed.")
+        print("========================================")
         PY
 
     restart: "no"
@@ -88,7 +111,7 @@ services:
       - --tensor-parallel-size
       - "2"
 
-      # GPU memory
+      # GPU Memory
       - --gpu-memory-utilization
       - "0.90"
 
@@ -112,7 +135,7 @@ services:
       - --tool-call-parser
       - hermes
 
-      # Model compatibility
+      # Model Compatibility
       - --trust-remote-code
 
       # Authentication
