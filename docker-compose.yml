@@ -105,14 +105,14 @@ services:
 
       # Context Length Penyesuaian VRAM
       - --max-model-len
-      - "32768"
+      - "262144"
 
       # Prefix Caching
       - --enable-prefix-caching
 
       # Scheduler Tuning
       - --max-num-batched-tokens
-      - "32768"
+      - "262144"
       - --max-num-seqs
       - "64"
 
