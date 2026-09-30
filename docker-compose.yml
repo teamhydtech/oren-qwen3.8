@@ -103,18 +103,18 @@ services:
       - --gpu-memory-utilization
       - "0.90"
 
-      # Context
+      # Context Length Penyesuaian VRAM
       - --max-model-len
-      - "262144"
+      - "32768"
 
-      # Scheduler
+      # Prefix Caching
+      - --enable-prefix-caching
+
+      # Scheduler Tuning
       - --max-num-batched-tokens
-      - "10000"
+      - "32768"
       - --max-num-seqs
-      - "8"
-
-      # Execution
-      - --enforce-eager
+      - "64"
 
       # Tool Calling
       - --enable-auto-tool-choice
